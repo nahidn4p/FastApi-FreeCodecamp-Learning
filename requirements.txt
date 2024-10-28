@@ -1,0 +1,6 @@
+fastapi
+sqlalchemy
+pydantic
+uvicorn
+psycopg2
+passlib[bcrypt]
