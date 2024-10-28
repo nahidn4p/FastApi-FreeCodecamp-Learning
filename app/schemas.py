@@ -32,3 +32,14 @@ class User(BaseModel):
 
     class Config:
         from_attributes = True  # Enables extracting from attributes (e.g., ORM models)
+class UserLogin(BaseModel):
+    email:EmailStr
+    password: str        
+
+
+class Token(BaseModel) :
+    access_token: str
+    token_type: str
+class Tokendata(BaseModel):
+    id : Optional[str] = None    
+     

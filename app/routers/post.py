@@ -1,8 +1,9 @@
-from .. import models,schemas,utils
-from fastapi import *
+from .. import models,schemas
+from fastapi import APIRouter,Depends,status,HTTPException,Response
 from ..database import engine, get_db
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from .. import oauth2
 
 router=APIRouter(
     prefix="/post" ,#this will add /post for every app path
@@ -18,10 +19,11 @@ def get_posts(db: Session =  Depends(get_db)):
     posts=db.query(models.Post).all()
     return [schemas.Post.model_validate(post) for post in posts]
 
-@router.post("/createpost",status_code=status.HTTP_201_CREATED,response_model=schemas.Post)
-def create_post(post: schemas.PostCreate,db: Session =  Depends(get_db)):
+@router.post("/createpost",status_code=status.HTTP_201_CREATED,response_model=schemas.Post )
+def create_post(post: schemas.PostCreate,db: Session =  Depends(get_db),
+                current_user :int = Depends(oauth2.get_current_user)):
     
-
+    #print(current_user)
     new_post=models.Post(**post.dict()) #** for unpacking dictionary
     print(new_post)
     db.add(new_post)
@@ -31,7 +33,8 @@ def create_post(post: schemas.PostCreate,db: Session =  Depends(get_db)):
     return schemas.Post.model_validate(new_post)  # Use Pydantic's model validate method
 
 @router.get("/{id}") 
-def get_post(id:int,db: Session =  Depends(get_db)):
+def get_post(id:int,db: Session =  Depends(get_db),
+            current_user :int = Depends(oauth2.get_current_user)):
     
     posts=db.query(models.Post).filter(models.Post.id==id).first()
     print(posts)
@@ -40,7 +43,8 @@ def get_post(id:int,db: Session =  Depends(get_db)):
     return {"Success": f"{posts}"}
 
 @router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
-def del_post(id:int,db: Session =  Depends(get_db)):
+def del_post(id:int,db: Session =  Depends(get_db),
+                current_user :int = Depends(oauth2.get_current_user)):
 
 
     posts=db.query(models.Post).filter(models.Post.id==id)
@@ -51,7 +55,8 @@ def del_post(id:int,db: Session =  Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT) #Delete Request Returns Nothing
 
 @router.put("/{id}",response_model=schemas.Post)
-def update_post(id:int,post:schemas.PostCreate,db: Session =  Depends(get_db)):
+def update_post(id:int,post:schemas.PostCreate,db: Session =  Depends(get_db),
+                current_user :int = Depends(oauth2.get_current_user)):
     
     posts_query=posts=db.query(models.Post).filter(models.Post.id==id)
     posts=posts_query.first()
