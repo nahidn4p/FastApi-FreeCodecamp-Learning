@@ -25,7 +25,7 @@ def create_post(post: schemas.PostCreate,db: Session =  Depends(get_db),
                 current_user :int = Depends(oauth2.get_current_user)):
     
     #print(current_user)
-    new_post=models.Post(**post.dict()) #** for unpacking dictionary
+    new_post=models.Post(owner_id=current_user.id,**post.model_dump()) #** for unpacking dictionary
     print(new_post)
     db.add(new_post)
     db.commit()
@@ -44,17 +44,27 @@ def get_post(id:int,db: Session =  Depends(get_db),
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post {id} Not found")
     return posts
 
-@router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}",response_model=schemas.Post)
 def del_post(id:int,db: Session =  Depends(get_db),
                 current_user :int = Depends(oauth2.get_current_user)):
 
 
-    posts=db.query(models.Post).filter(models.Post.id==id)
-    if posts.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post {id} Not found") 
-    posts.delete()
+    post = db.query(models.Post).filter(models.Post.id == id).first()
+
+    # Check if post exists
+    if post is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post {id} not found")
+    
+    # Authorization check
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to perform this action")
+    
+    # Delete post and commit changes
+    db.query(models.Post).filter(models.Post.id == id).delete()
     db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT) #Delete Request Returns Nothing
+    
+    # Return 204 No Content
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/{id}",response_model=schemas.Post)
 def update_post(id:int,post:schemas.PostCreate,db: Session =  Depends(get_db),
@@ -62,10 +72,13 @@ def update_post(id:int,post:schemas.PostCreate,db: Session =  Depends(get_db),
     
     posts_query=posts=db.query(models.Post).filter(models.Post.id==id)
     posts=posts_query.first()
+    print(posts)
 
     if posts is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post {id} Not found")
-    posts_query.update(post.dict())
+    if posts.owner_id!=current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail = "Not Authorized to perform this action")
+    posts_query.update(post.model_dump())
     db.commit()
-    return schemas.Post.model_validate(posts)
-    #return {"Success:" f"Post {id} updated successfuly"}
+    return posts
+    
