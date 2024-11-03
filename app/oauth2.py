@@ -22,7 +22,7 @@ def create_access_token(data: dict):
 
 
 
-def verify_access_token(token: str,credentials_exception ):
+def verify_access_token(token: str,credentials_exception):
 
     try:
         payload=jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
@@ -30,7 +30,11 @@ def verify_access_token(token: str,credentials_exception ):
         if id is None:
             return credentials_exception
         token_data=schemas.Tokendata(id=id)
-    except jwt.DecodeError:
+    except jwt.ExpiredSignatureError:
+        print("Token has expired.")
+        raise credentials_exception
+    except jwt.InvalidTokenError :
+        print("Token decode error: Invalid padding or malformed token.")
         raise credentials_exception
     return token_data
     
@@ -40,6 +44,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session= Depends(d
                                        headers={"WWW-authenticate" : {"Bearer"} }
                                        )
     token= verify_access_token(token,credentials_exception)
-    user=db.query(models.User).filter(models.User.id==token.id),first()
+    user=db.query(models.User).filter(models.User.id==token.id).first()
     return user
 

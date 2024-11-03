@@ -1,6 +1,6 @@
 from sqlalchemy import TIMESTAMP, text
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 
 # Create a declarative base class
 Base = declarative_base()
@@ -13,7 +13,7 @@ class Post(Base):
     content = Column(String, nullable=False)
     published = Column(Boolean, server_default=text('true'), nullable=False)  # Use 'true' for Boolean
     created_at = Column(TIMESTAMP(timezone=True), server_default=text("now()"), nullable=False)
-
+    owner_id= Column(Integer, ForeignKey("users.id",ondelete="CASCADE"), nullable=False )
 class User(Base):
     __tablename__ = "users"
 

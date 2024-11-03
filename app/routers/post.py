@@ -1,6 +1,6 @@
 from .. import models,schemas
 from fastapi import APIRouter,Depends,status,HTTPException,Response
-from ..database import engine, get_db
+from ..database import get_db
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from .. import oauth2
@@ -14,8 +14,9 @@ router=APIRouter(
 def root():
     return {"message": "Welcome"}
 
-@router.get("/", response_model=List[schemas.PostCreate] )
-def get_posts(db: Session =  Depends(get_db)):
+@router.get("/", response_model=List[schemas.Post] )
+def get_posts(db: Session =  Depends(get_db),
+                current_user :int = Depends(oauth2.get_current_user)):
     posts=db.query(models.Post).all()
     return [schemas.Post.model_validate(post) for post in posts]
 
@@ -32,15 +33,16 @@ def create_post(post: schemas.PostCreate,db: Session =  Depends(get_db),
      # Return the newly created post as a response
     return schemas.Post.model_validate(new_post)  # Use Pydantic's model validate method
 
-@router.get("/{id}") 
+@router.get("/{id}",response_model=schemas.Post) 
 def get_post(id:int,db: Session =  Depends(get_db),
             current_user :int = Depends(oauth2.get_current_user)):
     
     posts=db.query(models.Post).filter(models.Post.id==id).first()
+
     print(posts)
     if posts is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post {id} Not found")
-    return {"Success": f"{posts}"}
+    return posts
 
 @router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
 def del_post(id:int,db: Session =  Depends(get_db),
