@@ -14,6 +14,14 @@ router=APIRouter(
 def root():
     return {"message": "Welcome"}
 
+@router.get("/own", response_model=List[schemas.Post] )
+def get_posts(db: Session =  Depends(get_db),
+                current_user :int = Depends(oauth2.get_current_user)):
+    posts=db.query(models.Post).filter(models.Post.owner_id==current_user.id).all()
+    #return [schemas.Post.model_validate(post) for post in posts]
+    return posts
+
+
 @router.get("/", response_model=List[schemas.Post] )
 def get_posts(db: Session =  Depends(get_db),
                 current_user :int = Depends(oauth2.get_current_user)):
