@@ -26,9 +26,10 @@ def get_posts(db: Session =  Depends(get_db),
 def get_posts(db: Session =  Depends(get_db),
                 current_user :int = Depends(oauth2.get_current_user),
                 limit: int =10,
-                skip: int = 0
+                skip: int = 0,
+                search: Optional[str]= ""
                 ):
-    posts=db.query(models.Post).limit(limit).offset(skip).all()
+    posts=db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return [schemas.Post.model_validate(post) for post in posts]
 
 @router.post("/createpost",status_code=status.HTTP_201_CREATED,response_model=schemas.Post )
