@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr
+from typing import Annotated, Optional
+from pydantic import BaseModel, EmailStr, Field
 
 
 
@@ -18,6 +18,9 @@ class PostBase(BaseModel):
     title: str
     content: str
     published: bool = True
+
+    class Config:
+        from_attributes = True  # Enables extracting from attributes (e.g., ORM models)
 
 # Schema for post creation (request body)
 class PostCreate(PostBase):
@@ -49,4 +52,17 @@ class Token(BaseModel) :
     token_type: str
 class Tokendata(BaseModel):
     id : Optional[str] = None    
-     
+
+
+class Vote(BaseModel):
+    post_id: int
+    dir: Annotated[int, Field(strict=True, le=1)]
+    class Config:
+        from_attributes = True 
+
+class PostOut(BaseModel):
+    post: Post
+    votes: int
+
+    class Config:
+        from_attributes = True  # Enables extracting from attributes (e.g., ORM models)
